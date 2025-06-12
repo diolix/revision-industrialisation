@@ -1,3 +1,28 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wordpress-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -25,6 +50,14 @@ spec:
               value: database
         ports:
         - containerPort: 80
+        volumeMounts:
+          - name: wordpress-storage
+            mountPath: /var/www/html
+      volumes:
+        - name: wordpress-storage
+          persistentVolumeClaim:
+            claimName: wordpress-pvc
+
 ---
 apiVersion: v1
 kind: Service
@@ -43,24 +76,24 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mysql 
+  name: mysql
   labels:
-    app: mysql 
+    app: mysql
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mysql 
+      app: mysql
   template:
     metadata:
       labels:
-        app: mysql 
+        app: mysql
     spec:
       containers:
-      - name: mysql 
-        image: mysql:latest 
+      - name: mysql
+        image: mysql:latest
         ports:
-          - containerPort: 3306 
+          - containerPort: 3306
         env:
             - name: MYSQL_DATABASE
               value: database
@@ -68,6 +101,15 @@ spec:
               value: mysql-password
             - name: MYSQL_USER
               value: mysql-user
+            - name: MYSQL_ROOT_PASSWORD
+              value: rootpass
+        volumeMounts:
+          - name: mysql-storage
+            mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-storage
+          persistentVolumeClaim:
+            claimName: mysql-pvc
 
 ---
 apiVersion: v1
@@ -79,3 +121,4 @@ spec:
     app: mysql
   ports:
     - port: 3306
+      targetPort: 3306
