@@ -1,47 +1,38 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nextcloud-deployment
+  name: wordpress-deployment
 spec:
   selector:
     matchLabels:
-      app: nextcloud
+      app: wordpress
   template:
     metadata:
       labels:
-        app: nextcloud
+        app: wordpress
     spec:
-      volumes:
-         - name: local-storage
-           persistentVolumeClaim:
-             claimName: pvc1
-
       containers:
-      - name: wordpress-project
+      - name: wordpress
         image: wordpress:latest
         env:
             - name: WORDPRESS_DB_HOST
-              value: localhost
+              value: mysql-service
             - name: WORDPRESS_DB_USER
-              value: user-wordpress
+              value: mysql-user
             - name: WORDPRESS_DB_PASSWORD
-              value: root
+              value: mysql-password
             - name: WORDPRESS_DB_NAME
-              value: wordpress-name
+              value: database
         ports:
         - containerPort: 80
-        volumeMounts:
-        - mountPath: "/var/www/html"
-          name: wordpress
-
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: nextcloud-service
+  name: wordpress-service
 spec:
   selector:
-    app: nextcloud
+    app: wordpress
   ports:
     - protocol: TCP
       port: 80
@@ -65,10 +56,6 @@ spec:
       labels:
         app: mysql 
     spec:
-      volumes:
-      - name: mysql-data
-        persistentVolumeClaim:
-          claimName: pvc2
       containers:
       - name: mysql 
         image: mysql:latest 
@@ -81,9 +68,14 @@ spec:
               value: mysql-password
             - name: MYSQL_USER
               value: mysql-user
-            - name: MYSQL_ROOT_PASSWORD
-              value: mysql-root_password
-        volumeMounts:
-        - name: mysql-data
-          mountPath: /var/lib/mysql
 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
